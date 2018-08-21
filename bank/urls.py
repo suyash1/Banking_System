@@ -4,11 +4,9 @@ from . import views
 from rest_framework.urlpatterns import format_suffix_patterns
 
 urlpatterns = [
-    url(r'^account', views.AccountView.as_view(), name='account'),
-    url(r'^acc_list', views.acc),
-    url(r'^acc_info/(?P<accNum>\w+)/$', views.acc_info),
+    url(r'^account_list/$', views.account_list, name='account_list'),
+    url(r'^account_detail/(?P<accNum>\w+)/$', views.account_info, name='account_detail'),
     url(r'^deposit/$', views.deposit, name='deposit'),
-    #url('', views.index, name='index'),
     url('^transfer/$', views.transfer, name='transfer'),
 	]
 

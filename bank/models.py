@@ -1,4 +1,9 @@
 # -*- coding: utf-8 -*-
+'''
+Table schema information is defined here with respective field types
+Please look up for django model datatypes in django official documentation
+for more information
+'''
 from __future__ import unicode_literals
 import uuid
 from django.db import models

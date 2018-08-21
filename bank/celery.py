@@ -1,3 +1,11 @@
+'''
+@author:suyash
+the celery app which is performing backgroud async task processing
+
+the config is loaded from project/settings file for now, which can be separated
+as a part of good practice. Right now basic settings are used like broker and db number.
+Redis is used as a broker here
+'''
 from __future__ import absolute_import
 
 import os

@@ -1,4 +1,9 @@
 # -*- coding: utf-8 -*-
+'''
+@author suyash
+This consists of all the methods mapped to url end points
+mentioned in urls.py file
+'''
 from __future__ import unicode_literals
 
 from django.shortcuts import render
@@ -15,26 +20,15 @@ from django.utils.six import BytesIO
 import json
 import traceback
 from datetime import datetime, timedelta
-from bank.utils import set_transaction_log, is_duplicate_transaction
+from bank.utils import set_transaction_log, is_duplicate_transaction, is_valid_account
 
-class AccountView(generics.ListCreateAPIView):
-	queryset = Account.objects.all()
-	serializer_class = AccountSerializer
-
-	#def create(self, serializer):
-#		print serializer.request.__dict__
-#		serializer.save()
-
-def index(request):
-    return HttpResponse("Hello, world. You're at the polls index.")
 
 @csrf_exempt
 @api_view(['GET', 'POST'])
-def acc(request):
+def account_list(request):
 	if request.method == 'GET':
 		acc = Account.objects.all()
 		serializer = AccountSerializer(acc, many=True)
-		#return JsonResponse(serializer.data, safe=False)
 		return Response(serializer.data)
 
 	elif request.method == 'POST':
@@ -49,16 +43,20 @@ def acc(request):
 
 @csrf_exempt
 @api_view(['GET'])
-def acc_info(request, accNum):
-	try:
-		acc = Account.objects.get(account_number=accNum)
-	except Account.DoesNotExist:
-		return HttpResponse(status=404) 
+def account_info(request, accNum):
+	acc = None
+	if is_valid_account(accNum):
+		try:
+			acc = Account.objects.get(account_number=accNum)
+		except Account.DoesNotExist:
+			return HttpResponse(status=404) 
 	
-	if request.method == 'GET':
-		serializer = AccountSerializer(acc)
-		#return JsonResponse(serializer.data)
-		return Response(serializer.data)
+		if request.method == 'GET':
+			print 'here', acc
+			serializer = AccountSerializer(acc)
+			return Response(serializer.data)
+	else:
+		return Response('Invalid account')
 
 
 @csrf_exempt
@@ -66,16 +64,18 @@ def acc_info(request, accNum):
 def deposit(request):
 	if request.method == 'POST':
 		json_data = json.loads(request.body)
-		print json_data
 		account_number = json_data.get('account_number')
 		amount = json_data.get('amount')
-		try:
-			account_data = AccountOperation.deposit(account_num=account_number, amount=amount)
-			serializer = AccountSerializer(account_data)
-			return Response(serializer.data)
-		except Exception, e:
-			print traceback.print_exc()
-			return HttpResponse(status=503)
+		if is_valid_account(account_number):
+			try:
+				account_data = AccountOperation.deposit(account_num=account_number, amount=amount)
+				serializer = AccountSerializer(account_data)
+				return Response(serializer.data)
+			except Exception, e:
+				print traceback.print_exc()
+				return HttpResponse(status=503)
+		else:
+			return Response('Invalid account')
 
 
 
@@ -84,18 +84,22 @@ def deposit(request):
 def transfer(request):
 	if request.method == 'POST':
 		json_data = json.loads(request.body)
-		print json_data
 		from_acc = json_data.get('from_acc')
 		to_acc = json_data.get('to_acc')
 		amount = json_data.get('amount')
-		try:
-			#transfer_status = AccountOperation.transfer.delay(from_acc, to_acc, amount)
-			if not is_duplicate_transaction(''.join([from_acc, to_acc, str(amount)])):
-				set_transaction_log(''.join([from_acc, to_acc, str(amount)]))
-				transfer_money.apply_async((from_acc, to_acc, amount), eta=datetime.utcnow() + timedelta(minutes=1))
-				return Response('Transfer queued')
-			else:
-				return Response('You have made similar transaction which is pending currently. Please wait till it is completed.')
-		except Exception, e:
-			print traceback.print_exc()
-			return HttpResponse(status=503)
+		is_valid_from_acc = is_valid_account(from_acc)
+		is_valid_to_acc = is_valid_account(to_acc)
+		if is_valid_from_acc and is_valid_to_acc:
+			try:
+				if not is_duplicate_transaction(''.join([from_acc, to_acc, str(amount)])) and\
+					'Success' in AccountOperation.withdraw(account_num=from_acc, amount=amount):
+					set_transaction_log(''.join([from_acc, to_acc, str(amount)]))
+					transfer_money.apply_async((from_acc, to_acc, amount), eta=datetime.utcnow() + timedelta(minutes=1))
+					return Response('Transfer queued')
+				else:
+					return Response('You have made similar transaction which is pending currently. Please wait till it is completed.')
+			except Exception, e:
+				print traceback.print_exc()
+				return HttpResponse(status=503)
+		else:
+			return Response('Invalid sender account') if not is_valid_from_acc else Response("Invalid receiver's account")
