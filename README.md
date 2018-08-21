@@ -34,3 +34,6 @@ If you want to run app locally, fire up:
 ```
 python manage.py runserver
 ```
+
+## API usage
+
