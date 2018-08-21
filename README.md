@@ -35,5 +35,30 @@ If you want to run app locally, fire up:
 python manage.py runserver
 ```
 
-## API usage
+## TODO
+### Transactions Table
+In current POC, ```Transactions``` table is not updated as of now, even though it's schema is present in the table
+### core
+1. DB handling can be decoupled in a separate DAO layer going forward
+1. Using a combination of Optimistic(using versioning field for every write operation) and Pessimistic design approach based upon concurrency in mind.
+1. Only DBError is handled which can be further handled as of now
+### celery
+1. We can have a periodic task as well in case of task failure with retriable exception which will periodically try to execute the task upto certain number of retries
+### redis utlilty
+1. Redis connection pooling
 
+
+## API usage
+APIs can be tested either with Postman or directly in the browser. The following APIs are exposed as of now:
+
+1. GET http://35.184.172.9:8000/bank/account_list/
+
+1. GET http://35.184.172.9:8000/bank/account_detail/put_account_number_here/
+  
+1. POST http://35.184.172.9:8000/bank/deposit/ 
+   
+   Sample post params: {"account_number": "aaila", "amount":2000}
+
+1. POST http://35.184.172.9:8000/bank/transfer/ 
+   
+   Sample post params: {"from_acc": "aaila", "amount":1000, "to_acc":"ec18ab1a-5b47-48b4-bbd6-0c80f23a8955"}
