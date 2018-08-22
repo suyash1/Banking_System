@@ -15,7 +15,7 @@ from rest_framework.response import Response
 from rest_framework.parsers import JSONParser
 from .serializers import AccountSerializer
 from .models import Account
-from bank.core import AccountOperation, transfer_money
+from bank.core import AccountOperation, transfer_money, deposit_money
 from django.utils.six import BytesIO
 import json
 import traceback
@@ -68,12 +68,15 @@ def deposit(request):
 		amount = json_data.get('amount')
 		if is_valid_account(account_number):
 			try:
-				account_data = AccountOperation.deposit(account_num=account_number, amount=amount)
-				serializer = AccountSerializer(account_data)
-				return Response(serializer.data)
+				if not is_duplicate_transaction(''.join(['deposit', account_number, str(amount)])):
+					set_transaction_log(''.join(['deposit', account_number, str(amount)]))
+					deposit_money.apply_async((account_number, amount), eta=datetime.utcnow() + timedelta(seconds=20))
+					return Response('Deposit request accepted, please check your account in few seconds')
+				else:
+					return Response('Looks like same request has already been made, please wait till the earlier request is completed')
 			except Exception, e:
 				print traceback.print_exc()
-				return HttpResponse(status=503)
+				return Response('Deposit failed')
 		else:
 			return Response('Invalid account')
 

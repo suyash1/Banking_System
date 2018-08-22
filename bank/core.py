@@ -62,10 +62,10 @@ class AccountOperation(object):
 		return account
 
 
-@shared_task
+@app.task
 def transfer_money(from_acc, to_acc, amount):
 	'''
-	Async amount transfer celery task which will be executed after ETA is completed.
+	Async transfer celery task which will be executed after ETA is completed.
 	Check views.py -> transfer method where ETA is being set.
 	'''
 	try:
@@ -78,4 +78,19 @@ def transfer_money(from_acc, to_acc, amount):
 	except DatabaseError, e:
 		raise e
 
-
+@app.task
+def deposit_money(account_num, amount):
+	'''
+	Async deposit celery task which will be executed after ETA is completed.
+	Check views.py -> deposit method where ETA is being set.
+	'''
+	account = None
+	try:
+		transaction_log = ''.join(['deposit', account_num, str(amount)])
+		with transaction.atomic():
+			account = Account.objects.select_for_update().get(account_number=account_num)
+			account.balance += amount
+			account.save()
+		unset_transaction_log(transaction_log)
+	except DatabaseError, e:
+		raise e
