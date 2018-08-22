@@ -42,6 +42,7 @@ In current POC, ```Transactions``` table is not updated as of now, even though i
 1. DB handling can be decoupled in a separate DAO layer going forward
 1. Using a combination of Optimistic(using versioning field for every write operation) and Pessimistic design approach based upon concurrency in mind.
 1. Only DBError is handled which can be further handled as of now
+1. In current implementation, deposit method is implemented as an async task which is executed after 20 seconds eta, which is kind of hacky way to prevent concurrent deposit request and addressing only one. A more better approach would be Optimistic design as mentioned above.
 ### celery
 1. We can have a periodic task as well in case of task failure with retriable exception which will periodically try to execute the task upto certain number of retries
 ### redis utlilty
