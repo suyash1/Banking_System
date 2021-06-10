@@ -10,7 +10,7 @@ cloud-init==0.7.5
 colorama==0.2.5
 configobj==4.7.2
 crcmod==1.7
-Django==1.11.15
+Django==2.2.24
 djangorestframework==3.8.2
 google-compute-engine==2.8.2
 gunicorn==19.9.0
